@@ -18,7 +18,7 @@ void handleConfiguration(){
 
 void handleData(){
     while(true){
-        ThisThread::sleep_for(weatherStation.getConfiguration().interval);
+        ThisThread::sleep_for(std::chrono::milliseconds(weatherStation.getConfiguration().interval));
         dataMutex.lock();
         weatherStation.refreshData();
         dataMutex.unlock();
@@ -28,12 +28,18 @@ void handleData(){
 void handleLog(){
     while(true){
         // This thread will read the sensor data from the extensionboard
-        ThisThread::sleep_for(weatherStation.getConfiguration().interval);
-        if(weatherStation.getConfiguration().logSerial){
-            dataMutex.lock();
+        ThisThread::sleep_for(std::chrono::milliseconds(weatherStation.getConfiguration().interval));
+        dataMutex.lock();
+        if(weatherStation.getConfiguration().logSerial){            
             weatherStation.logSerial();
-            dataMutex.unlock();
         }
+        if(weatherStation.getConfiguration().logSD){
+            weatherStation.logSD();
+        }
+        if(weatherStation.getConfiguration().logBLE){
+            weatherStation.logBLE();
+        }
+        dataMutex.unlock();
     }
 }
 

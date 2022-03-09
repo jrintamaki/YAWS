@@ -14,12 +14,23 @@ FileHandle *mbed::mbed_override_console(int fd)
 Yaws::Yaws()
     : m_WeatherReport()
     , m_Configuration(5000, true, false, false)
-    //, m_serial(USBTX, USBRX, 9600)
+    , m_BLE( ARDUINO_UNO_D11,
+             ARDUINO_UNO_D12,
+             ARDUINO_UNO_D13,
+             ARDUINO_UNO_D10,
+             ARDUINO_UNO_D6,
+             ARDUINO_UNO_D7 )
 {
-    m_MS8607.ms8607_init();
+    // Setup the PHT
+    m_PHT.ms8607_init();
+
+    // Setyp the BLE
+    m_BLE.setTransmitMode();
+    m_BLE.enable();
 }
 
-void Yaws::refreshData(){
+void Yaws::refreshData()
+{
     // Example values
     m_WeatherReport.pressure = 1011;
     m_WeatherReport.temperature = 22;
@@ -31,9 +42,9 @@ void Yaws::refreshData(){
     float * humidity;
 
     // Read new data from I2C through the MS8607 driver
-    auto result = m_MS8607.ms8607_read_temperature_pressure_humidity(temperature, pressure, humidity);
+    auto result = m_PHT.ms8607_read_temperature_pressure_humidity(temperature, pressure, humidity);
 
-    if(result == m_MS8607.ms8607_status_ok){
+    if(result == m_PHT.ms8607_status_ok){
         m_WeatherReport.pressure =  *temperature;
         m_WeatherReport.temperature = *pressure;
         m_WeatherReport.humidity = *humidity;
@@ -43,14 +54,25 @@ void Yaws::refreshData(){
     }
 }
 
-void Yaws::logSerial(){
-
+void Yaws::logSerial()
+{
     printf("pressure: %.2f temperature: %.2f RH: %.2f\n", m_WeatherReport.pressure, 
                                                           m_WeatherReport.temperature,
                                                           m_WeatherReport.humidity);
 }
 
-yaws::Configuration Yaws::getConfiguration(){
+void Yaws::logSD()
+{
+    // Here we log the weather report to SD
+}
+
+void Yaws::logBLE()
+{
+    // Here we log the weathereport via RADIO
+}
+
+yaws::Configuration Yaws::getConfiguration()
+{
     return m_Configuration;
 }
 

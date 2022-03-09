@@ -3,6 +3,7 @@
 
 #include "BufferedSerial.h"
 #include "mbed.h"
+#include "nRF24L01P.h"
 #include "types.h"
 #include "ms8607.h"
 
@@ -15,11 +16,12 @@ public:
 
     void refreshData();
     void logSerial();
+    void logSD();
+    void logBLE();
+
+
+
     yaws::Configuration getConfiguration();
-
-
-    
-
 
 private:
 
@@ -27,12 +29,11 @@ private:
     yaws::Configuration m_Configuration;
     yaws::WeatherReport m_WeatherReport;
 
-
-    // Serial
-    //BufferedSerial m_serial;
-
     // PHT sensor
-    MS8607 m_MS8607;
+    MS8607 m_PHT;
+
+    // Radio
+    nRF24L01P m_BLE;
 
 
 };
