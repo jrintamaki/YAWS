@@ -3,6 +3,7 @@
 
 #include "BufferedSerial.h"
 #include "mbed.h"
+#include "SDBlockDevice.h"
 #include "nRF24L01P.h"
 #include "types.h"
 #include "ms8607.h"
@@ -31,9 +32,15 @@ private:
 
     // PHT sensor
     MS8607 m_PHT;
+    void setupPHT();
 
     // Radio
     nRF24L01P m_BLE;
+    void setupBLE();
+
+    // SD
+    SDBlockDevice m_SD;
+    void setupSD();
 
 
 };

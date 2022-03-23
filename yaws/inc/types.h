@@ -1,9 +1,7 @@
-#include <cstdint>
-#include <cstdio>
 namespace yaws {
 
 struct Configuration {
-    std::uint32_t interval;
+    int interval;
     bool logSerial, logSD, logBLE;
 
     Configuration(int i, bool serial, bool sd, bool ble){

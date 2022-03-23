@@ -20,13 +20,19 @@ Yaws::Yaws()
              ARDUINO_UNO_D10,
              ARDUINO_UNO_D6,
              ARDUINO_UNO_D7 )
+    , m_SD(MBED_CONF_SD_SPI_MOSI,
+           MBED_CONF_SD_SPI_MISO,
+           MBED_CONF_SD_SPI_CLK,
+           MBED_CONF_SD_SPI_CS )        
 {
     // Setup the PHT
-    m_PHT.ms8607_init();
+    setupPHT();
 
-    // Setyp the BLE
-    m_BLE.setTransmitMode();
-    m_BLE.enable();
+    // Setup the BLE
+    setupBLE();
+
+    // Setup the SD
+    setupSD();
 }
 
 void Yaws::refreshData()
@@ -63,12 +69,36 @@ void Yaws::logSerial()
 
 void Yaws::logSD()
 {
-    // Here we log the weather report to SD
+    // TODO: figure out to dynamically determine weather report size
+    uint8_t block[512] = "Hello World!\n";
+    m_SD.program(block, 0, sizeof(block));
 }
 
 void Yaws::logBLE()
 {
     // Here we log the weathereport via RADIO
+}
+
+
+void Yaws::setupBLE()
+{
+    // TODO: This needs study, how to set up?
+    m_BLE.setTransmitMode();
+    m_BLE.enable();
+}
+
+void Yaws::setupPHT()
+{
+    // TODO: Other shit also neede in here?
+    m_PHT.ms8607_init();
+}
+
+void Yaws::setupSD()
+{
+    // TODO: Other shit needed in here?
+    m_SD.init();
+    m_SD.frequency(5000000);
+    m_SD.erase(0, m_SD.get_erase_size());
 }
 
 yaws::Configuration Yaws::getConfiguration()
