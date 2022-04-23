@@ -13,11 +13,12 @@
 #include "mbed.h"
 #include "ms8607.h"
 
-MS8607::MS8607() : m_i2c_master(I2C_SDA, I2C_SCL)
+I2C m_i2c_master(I2C_SDA, I2C_SCL);
+
+MS8607::MS8607()
 {
     // Do something else here if neccesary
 }
-
 
 enum MS8607::status_code MS8607::i2c_master_read_packet_wait(struct i2c_master_packet *const packet)
 {
@@ -34,7 +35,7 @@ enum MS8607::status_code MS8607::i2c_master_read_packet_wait(struct i2c_master_p
 enum MS8607::status_code MS8607::i2c_master_write_packet_wait(struct i2c_master_packet *const packet)
 {
     int ack = m_i2c_master.write(packet->address, packet->data, packet->data_length);
-    
+
     if(ack == 0){
         return STATUS_OK;
     }
@@ -314,7 +315,7 @@ bool MS8607::hsensor_is_connected(void)
 	enum status_code i2c_status;
 	
 	struct i2c_master_packet transfer = {
-		.address     = HSENSOR_ADDR,
+		.address     = HSENSOR_ADDR << 1 ,
 		.data_length = 0,
 		.data        = NULL,
 	};
@@ -366,7 +367,7 @@ enum MS8607::ms8607_status MS8607::hsensor_write_command( uint8_t cmd)
 	data[0] = cmd;
 		
 	struct i2c_master_packet transfer = {
-		.address     = HSENSOR_ADDR,
+		.address     = HSENSOR_ADDR << 1,
 		.data_length = 1,
 		.data        = data,
 	};
@@ -399,7 +400,7 @@ enum MS8607::ms8607_status MS8607::hsensor_write_command_no_stop( uint8_t cmd)
 	data[0] = cmd;
 		
 	struct i2c_master_packet transfer = {
-		.address     = HSENSOR_ADDR,
+		.address     = HSENSOR_ADDR << 1,
 		.data_length = 1,
 		.data        = data,
 	};
@@ -467,7 +468,7 @@ enum MS8607::ms8607_status MS8607::hsensor_read_user_register(uint8_t *value)
 
 	/* Read data */
 	struct i2c_master_packet read_transfer = {
-		.address     = HSENSOR_ADDR,
+		.address     = HSENSOR_ADDR << 1,
 		.data_length = 1,
 		.data        = buffer,
 	};
@@ -519,7 +520,7 @@ enum MS8607::ms8607_status MS8607::hsensor_write_user_register(uint8_t value)
 	data[1] = reg;
 
 	struct i2c_master_packet transfer = {
-		.address     = HSENSOR_ADDR,
+		.address     = HSENSOR_ADDR << 1,
 		.data_length = 2,
 		.data        = data,
 	};
@@ -559,7 +560,7 @@ enum MS8607::ms8607_status MS8607::hsensor_humidity_conversion_and_read_adc( uin
 
 	/* Read data */
     struct i2c_master_packet read_transfer = {
-		.address     = HSENSOR_ADDR,
+		.address     = HSENSOR_ADDR << 1,
 		.data_length = 3,
 		.data        = buffer,
 	};
@@ -609,14 +610,14 @@ enum MS8607::ms8607_status MS8607::hsensor_read_relative_humidity( float *humidi
 {
 	enum ms8607_status	status;
 	uint16_t adc;
-	
+
 	status = hsensor_humidity_conversion_and_read_adc( &adc);
 	if( status != ms8607_status_ok)
 		return status;
-	
+
 	// Perform conversion function
 	*humidity = (float)adc * HUMIDITY_COEFF_MUL / (1UL<<16) + HUMIDITY_COEFF_ADD;
-	
+
 	return status;
 }
 
@@ -683,7 +684,7 @@ bool MS8607::psensor_is_connected(void)
 	enum status_code i2c_status;
 	
 	struct i2c_master_packet transfer = {
-		.address     = PSENSOR_ADDR,
+		.address     = PSENSOR_ADDR << 1,
 		.data_length = 0,
 		.data        = NULL,
 	};
@@ -726,7 +727,7 @@ enum MS8607::ms8607_status MS8607::psensor_write_command( uint8_t cmd)
 	data[0] = cmd;
 		
 	struct i2c_master_packet transfer = {
-		.address     = PSENSOR_ADDR,
+		.address     = PSENSOR_ADDR << 1,
 		.data_length = 1,
 		.data        = data,
 	};
@@ -775,7 +776,7 @@ enum MS8607::ms8607_status MS8607::psensor_read_eeprom_coeff(uint8_t command, ui
 
 	/* Read data */
 	struct i2c_master_packet read_transfer = {
-		.address     = PSENSOR_ADDR,
+		.address     = PSENSOR_ADDR << 1,
 		.data_length = 2,
 		.data        = buffer,
 	};
@@ -851,7 +852,7 @@ enum MS8607::ms8607_status MS8607::psensor_conversion_and_read_adc(uint8_t cmd, 
 
 	/* Read data */
     struct i2c_master_packet read_transfer = {
-		.address     = PSENSOR_ADDR,
+		.address     = PSENSOR_ADDR << 1,
 		.data_length = 3,
 		.data        = buffer,
 	};
@@ -917,16 +918,16 @@ enum MS8607::ms8607_status MS8607::psensor_read_pressure_and_temperature( float 
 	status = psensor_conversion_and_read_adc( cmd, &adc_pressure);
 	if( status != ms8607_status_ok)
 		return status;
-    
+
     if (adc_temperature == 0 || adc_pressure == 0)
         return ms8607_status_i2c_transfer_error;
 
 	// Difference between actual and reference temperature = D2 - Tref
 	dT = (int32_t)adc_temperature - ( (int32_t)eeprom_coeff[REFERENCE_TEMPERATURE_INDEX] <<8 );
-	
+
 	// Actual temperature = 2000 + dT * TEMPSENS
 	TEMP = 2000 + ((int64_t)dT * (int64_t)eeprom_coeff[TEMP_COEFF_OF_TEMPERATURE_INDEX] >> 23) ;
-	
+
 	// Second order temperature compensation
 	if( TEMP < 2000 )
 	{
@@ -946,21 +947,21 @@ enum MS8607::ms8607_status MS8607::psensor_read_pressure_and_temperature( float 
 		OFF2 = 0 ;
 		SENS2 = 0 ;
 	}
-	
+
 	// OFF = OFF_T1 + TCO * dT
 	OFF = ( (int64_t)(eeprom_coeff[PRESSURE_OFFSET_INDEX]) << 17 ) + ( ( (int64_t)(eeprom_coeff[TEMP_COEFF_OF_PRESSURE_OFFSET_INDEX]) * dT ) >> 6 ) ;
 	OFF -= OFF2 ;
-	
+
 	// Sensitivity at actual temperature = SENS_T1 + TCS * dT
 	SENS = ( (int64_t)eeprom_coeff[PRESSURE_SENSITIVITY_INDEX] << 16 ) + ( ((int64_t)eeprom_coeff[TEMP_COEFF_OF_PRESSURE_SENSITIVITY_INDEX] * dT) >> 7 ) ;
 	SENS -= SENS2 ;
-	
+
 	// Temperature compensated pressure = D1 * SENS - OFF
 	P = ( ( (adc_pressure * SENS) >> 21 ) - OFF ) >> 15 ;
-	
+    
 	*temperature = ( (float)TEMP - T2 ) / 100;
 	*pressure = (float)P / 100;
-	
+
 	return status;
 }
 

@@ -4,6 +4,7 @@
 #include "BufferedSerial.h"
 #include "mbed.h"
 #include "SDBlockDevice.h"
+#include "FATFileSystem.h"
 #include "nRF24L01P.h"
 #include "types.h"
 #include "ms8607.h"
@@ -15,15 +16,21 @@ class Yaws{
 public:
     Yaws();
 
+    void run();
+
+    void setupPHT();
+    void setupSD();
+    void setupBLE();
+
     void refreshData();
+
+    void logData();
     void logSerial();
     void logSD();
     void logBLE();
 
-
-
     yaws::Configuration getConfiguration();
-
+    
 private:
 
     // Data structs
@@ -31,16 +38,16 @@ private:
     yaws::WeatherReport m_WeatherReport;
 
     // PHT sensor
-    MS8607 m_PHT;
-    void setupPHT();
+    //MS8607 m_PHT;
+
 
     // Radio
-    nRF24L01P m_BLE;
-    void setupBLE();
+    //nRF24L01P m_BLE;
 
     // SD
-    SDBlockDevice m_SD;
-    void setupSD();
+    // SDBlockDevice m_SD;
+    // FATFileSystem m_FS;
+
 
 
 };

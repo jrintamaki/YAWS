@@ -335,7 +335,7 @@ public:
 private:
 
     // I2C master
-    I2C m_i2c_master;
+    //I2C m_i2c_master;
 
     // humidity sensor functions
     enum ms8607_status hsensor_reset(void);
@@ -358,7 +358,7 @@ private:
     bool psensor_crc_check (uint16_t *n_prom, uint8_t crc);
     enum ms8607_status psensor_read_pressure_and_temperature( float *, float *);
 
-    uint32_t hsensor_conversion_time;
+    uint32_t hsensor_conversion_time{HSENSOR_CONVERSION_TIME_12b};
     ms8607_humidity_i2c_master_mode hsensor_i2c_master_mode;
     bool hsensor_heater_on{false};
 
