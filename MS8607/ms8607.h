@@ -10,6 +10,7 @@
 #ifndef MS8607_H_INCLUDED
 #define MS8607_H_INCLUDED
 
+#include "PinNames.h"
 #include "mbed.h"
 #include <stdint.h>
 #include <stdbool.h>
@@ -116,9 +117,6 @@
 class MS8607 {
 public:
 
-    // Constuctor
-    MS8607();
-
     // Enums 
     enum i2c_transfer_direction {
     I2C_TRANSFER_WRITE = 0,
@@ -178,7 +176,9 @@ public:
    	    // Data array containing all data to be transferred
    	    char *data;
     };
-  
+
+    // Constuctor
+    MS8607(PinName, PinName);
 
     // Mbed specific functions
     void i2c_master_init(void);
@@ -335,7 +335,7 @@ public:
 private:
 
     // I2C master
-    //I2C m_i2c_master;
+    I2C m_i2c_master;
 
     // humidity sensor functions
     enum ms8607_status hsensor_reset(void);

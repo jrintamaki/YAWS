@@ -1,40 +1,22 @@
 #include "yaws.h"
-#include "BufferedSerial.h"
-
-BufferedSerial serial_port(USBTX, USBRX, 9600);
-
-SDBlockDevice m_SD(MBED_CONF_SD_SPI_MOSI,
-                   MBED_CONF_SD_SPI_MISO,
-                   MBED_CONF_SD_SPI_CLK,
-                   ARDUINO_UNO_D9 );
-FATFileSystem m_FS("sd");
-
-MS8607 m_PHT;
 
 Yaws::Yaws()
     : m_WeatherReport()
-    , m_Configuration(2000, true, true, false)
-    // , m_PHT(I2C_SDA, I2C_SCL)
-    // , m_BLE( ARDUINO_UNO_D11,
-    //          ARDUINO_UNO_D12,
-    //          ARDUINO_UNO_D13,
-    //          ARDUINO_UNO_D10,
-    //          ARDUINO_UNO_D6,
-    //          ARDUINO_UNO_D7 )
-    // , m_SD(MBED_CONF_SD_SPI_MOSI,
-    //        MBED_CONF_SD_SPI_MISO,
-    //        MBED_CONF_SD_SPI_CLK,
-    //        ARDUINO_UNO_D9 )
-    /*, m_FS("fs") */
+    , m_Configuration(2000, true, true, true)
+    , m_serial(USBTX, USBRX, 9600)
+    , m_PHT(I2C_SDA, I2C_SCL)
+    , m_BLE(ARDUINO_UNO_D11,  // MOSI
+            ARDUINO_UNO_D12,  // MISO
+            ARDUINO_UNO_D13,  // SCK
+            ARDUINO_UNO_D10,  // CSN
+            ARDUINO_UNO_D6)   // CE 
+    , m_SD(MBED_CONF_SD_SPI_MOSI,
+           MBED_CONF_SD_SPI_MISO,
+           MBED_CONF_SD_SPI_CLK,
+           ARDUINO_UNO_D9 )
+    , m_FS("sd") 
 {
-    // Setup the PHT
-    //setupPHT();
-
-    // // Setup the BLE
-    // setupBLE();
-
-    // Setup the SD
-    //setupSD();
+    // Do something here if necessary
 }
 
 void Yaws::setupSD()
@@ -54,7 +36,7 @@ void Yaws::setupSD()
 
 void Yaws::setupBLE()
 {
-    // TODO: This needs study, how to set up?
+    m_BLE.init();
 }
 
 void Yaws::setupPHT()
@@ -70,10 +52,10 @@ void Yaws::setupPHT()
 void Yaws::run()
 {
     // Setup devices
-    setupSD();
-    //setupBLE();
+    setupBLE();
     setupPHT();
-    
+    setupSD();
+
     while(true)
     {
         ThisThread::sleep_for(std::chrono::milliseconds(m_Configuration.interval));
@@ -133,12 +115,8 @@ void Yaws::logSD()
 
 void Yaws::logBLE()
 {
-    // Here we log the weathereport via RADIO
+    yaws::WeatherReport * report_ptr = &m_WeatherReport;
+    m_BLE.transmitPHTdata(&report_ptr->temperature, 
+                          &report_ptr->pressure,
+                          &report_ptr->humidity);
 }
-
-yaws::Configuration Yaws::getConfiguration()
-{
-    return m_Configuration;
-}
-
-

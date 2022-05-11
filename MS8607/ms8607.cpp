@@ -10,12 +10,13 @@
  *
  */
 
+#include "PinNames.h"
 #include "mbed.h"
 #include "ms8607.h"
 
-I2C m_i2c_master(I2C_SDA, I2C_SCL);
+//I2C m_i2c_master(I2C_SDA, I2C_SCL);
 
-MS8607::MS8607()
+MS8607::MS8607(PinName SDA, PinName SCL) : m_i2c_master(SDA, SCL)
 {
     // Do something else here if neccesary
 }
