@@ -4,4 +4,3 @@ projectfiles
 *.py*
 BUILD
 mbed-os
-nRF24L01P
