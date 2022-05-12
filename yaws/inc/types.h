@@ -1,10 +1,11 @@
+#include <chrono>
 namespace yaws {
 
 struct Configuration {
-    int interval;
+    std::chrono::milliseconds interval;
     bool logSerial, logSD, logBLE;
 
-    Configuration(int i, bool serial, bool sd, bool ble){
+    Configuration(std::chrono::milliseconds i, bool serial, bool sd, bool ble){
         interval = i;
         logSerial = serial;
         logSD = sd;

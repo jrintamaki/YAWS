@@ -7,6 +7,7 @@ See wiki page: <https://developer.mbed.org/users/hudakz/code/BLE_nRF24L01>
  */
 
 
+#include "Timer.h"
 #include "mbed.h"
 #include "PinNames.h"
 
@@ -23,7 +24,7 @@ public:
     BLEnRF(PinName MOSI, PinName MISO, PinName SCK, PinName CSN, PinName CE);
 
     void init();
-    void transmitPHTdata( float *, float *, float *);
+    void transmitPHTdata( float *, float *, float *, std::chrono::milliseconds);
 
 private:
     /**
@@ -101,7 +102,9 @@ private:
 
     SPI spi;
     DigitalOut cs;
-    DigitalOut ce;  
+    DigitalOut ce;
+
+    Timer timer;  
 
     uint8_t buf[32];
     const uint8_t chRf[3] = { 2, 26, 80 };

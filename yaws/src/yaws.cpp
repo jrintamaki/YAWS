@@ -2,7 +2,7 @@
 
 Yaws::Yaws()
     : m_WeatherReport()
-    , m_Configuration(2000, true, true, true)
+    , m_Configuration(2000ms, true, true, true)
     , m_serial(USBTX, USBRX, 9600)
     , m_PHT(I2C_SDA, I2C_SCL)
     , m_BLE(ARDUINO_UNO_D11,  // MOSI
@@ -58,7 +58,10 @@ void Yaws::run()
 
     while(true)
     {
-        ThisThread::sleep_for(std::chrono::milliseconds(m_Configuration.interval));
+        // Wait for a configured duration if BLE logging is not enabled
+        if(!m_Configuration.logBLE) {
+            ThisThread::sleep_for(m_Configuration.interval);
+        }
         refreshData();
         logData();
     }
@@ -93,9 +96,9 @@ void Yaws::logData()
 
 void Yaws::logSerial()
 {
-    printf("pressure: %.2f temperature: %.2f RH: %.2f\n", m_WeatherReport.pressure, 
-                                                          m_WeatherReport.temperature,
-                                                          m_WeatherReport.humidity);
+    printf("pressure: %.2f RH: %.2f temperature: %.2f \n", m_WeatherReport.pressure,
+                                                           m_WeatherReport.humidity,
+                                                           m_WeatherReport.temperature);
 }
 
 void Yaws::logSD()
@@ -105,10 +108,9 @@ void Yaws::logSD()
         printf("File Open failed \n");
         return;
     }
-    fprintf(file, "pressure: %.2f temperature: %.2f RH: %.2f\r\n",
-                m_WeatherReport.pressure,
-                m_WeatherReport.temperature,
-                m_WeatherReport.humidity);
+    fprintf(file,"pressure: %.2f RH: %.2f temperature: %.2f \n", m_WeatherReport.pressure,
+                                                                 m_WeatherReport.humidity,
+                                                                 m_WeatherReport.temperature);
     
     fclose(file);
 }
@@ -118,5 +120,6 @@ void Yaws::logBLE()
     yaws::WeatherReport * report_ptr = &m_WeatherReport;
     m_BLE.transmitPHTdata(&report_ptr->temperature, 
                           &report_ptr->pressure,
-                          &report_ptr->humidity);
+                          &report_ptr->humidity,
+                          m_Configuration.interval);
 }

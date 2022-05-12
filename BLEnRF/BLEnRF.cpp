@@ -7,7 +7,7 @@ See wiki page: <https://developer.mbed.org/users/hudakz/code/BLE_nRF24L01>
  */
  
 #include "BLEnRF.h"
- 
+
 BLEnRF::BLEnRF(PinName MOSI, PinName MISO, PinName SCK, PinName CSN, PinName CE)
     : spi(MOSI, MISO, SCK)
     , cs(CSN)
@@ -52,70 +52,91 @@ void BLEnRF::init(){
     nrfWriteBytes(buf, 5);
 }
 
-void BLEnRF::transmitPHTdata(float * temperature, float * pressure, float * humidity)
+void BLEnRF::transmitPHTdata(float * temperature, float * pressure, float * humidity, std::chrono::milliseconds broadcastDuration)
 {
     uint8_t  i = 0;
     uint8_t  j = 0;
     uint8_t  ch = 0;
-    uint8_t  data[4];  
-    float*   temp = reinterpret_cast <float*>(&data[0]);
+    int valueType = 0;
 
-    *temp = *temperature;
-    
-    for(ch = 0; ch < (sizeof(chRf) / sizeof(*chRf)); ch++) {
-        i = 0;
-        buf[i++] = 0x42;            // PDU type, given address is random; 0x42 for Android and 0x40 for iPhone
-        buf[i++] = 21;              // number of following data bytes, max 29  (CRC is not included)
+    uint8_t  data[4];
+    float*   sensorValue = reinterpret_cast <float*>(&data[0]);
+
+    timer.reset();
+    timer.start();
+
+    while (timer.elapsed_time() < broadcastDuration) {
+
+        switch (valueType) {
+            case 0:
+                *sensorValue = *pressure;
+                break;
+            case 1:
+                *sensorValue = *humidity;
+                break;
+            case 2:  
+                *sensorValue = *temperature;
+                break;
+        }
+
+        for(ch = 0; ch < (sizeof(chRf) / sizeof(*chRf)); ch++) {
+            i = 0;
+            buf[i++] = 0x42;            // PDU type, given address is random; 0x42 for Android and 0x40 for iPhone
+            buf[i++] = 22;              // number of following data bytes, max 29  (CRC is not included)
+            
+            //----------------------------
+            buf[i++] = MY_MAC_0;
+            buf[i++] = MY_MAC_1;
+            buf[i++] = MY_MAC_2;
+            buf[i++] = MY_MAC_3;
+            buf[i++] = MY_MAC_4;
+            buf[i++] = MY_MAC_5;
         
-        //----------------------------
-        buf[i++] = MY_MAC_0;
-        buf[i++] = MY_MAC_1;
-        buf[i++] = MY_MAC_2;
-        buf[i++] = MY_MAC_3;
-        buf[i++] = MY_MAC_4;
-        buf[i++] = MY_MAC_5;
-    
-        buf[i++] = 2;               // flags (LE-only, limited discovery mode)
-        buf[i++] = 0x01;
-        buf[i++] = 0x05;
-    
-        buf[i++] = 5;               // length of the name, including type byte
-        buf[i++] = 0x08;            // TYPE_NAME_SHORT
-        buf[i++] = 'Y';
-        buf[i++] = 'A';
-        buf[i++] = 'W';
-        buf[i++] = 'S';
-    
-        buf[i++] = 5;               // length of custom data, including type byte
-        buf[i++] = 0xff;            // TYPE_CUSTOMDATA
-
-        buf[i++] = data[0];         // temperature floating point value (four bytes)
-        buf[i++] = data[1];         
-        buf[i++] = data[2];         
-        buf[i++] = data[3];       
-        //----------------------------
+            buf[i++] = 2;               // flags (LE-only, limited discovery mode)
+            buf[i++] = 0x01;
+            buf[i++] = 0x05;
         
-        buf[i++] = 0x55;            // CRC start value: 0x555555
-        buf[i++] = 0x55;
-        buf[i++] = 0x55;
-    
-        nrfCmd(0x25, chRf[ch]);
-        nrfCmd(0x27, 0x6E);         // Clear flags
-        blePacketEncode(buf, i, chLe[ch]);
-        nrfWriteByte(0xE2);         // Clear RX Fifo
-        nrfWriteByte(0xE1);         // Clear TX Fifo
+            buf[i++] = 5;               // length of the name, including type byte
+            buf[i++] = 0x08;            // TYPE_NAME_SHORT
+            buf[i++] = 'Y';
+            buf[i++] = 'A';
+            buf[i++] = 'W';
+            buf[i++] = 'S';
+        
+            buf[i++] = 6;               // length of custom data, including type byte
+            buf[i++] = 0xff;            // TYPE_CUSTOMDATA
 
-        cs = 0;
-        spi.write(0xA0);
-        for(j = 0; j < i; j++)
-            spi.write(buf[j]);
-        cs = 1;
-    
-        nrfCmd(0x20, 0x12);         // TX on
-        ce = 1;                     // Enable Chip
-        ThisThread::sleep_for(200ms);    
-        ce = 0;                     // (in preparation of switching to RX quickly)
+            buf[i++] = valueType;
+            buf[i++] = data[0];         // Sensor data floating point value (four bytes)
+            buf[i++] = data[1];         
+            buf[i++] = data[2];         
+            buf[i++] = data[3];       
+            //----------------------------
+            
+            buf[i++] = 0x55;            // CRC start value: 0x555555
+            buf[i++] = 0x55;
+            buf[i++] = 0x55;
+        
+            nrfCmd(0x25, chRf[ch]);
+            nrfCmd(0x27, 0x6E);         // Clear flags
+            blePacketEncode(buf, i, chLe[ch]);
+            nrfWriteByte(0xE2);         // Clear RX Fifo
+            nrfWriteByte(0xE1);         // Clear TX Fifo
+
+            cs = 0;
+            spi.write(0xA0);
+            for(j = 0; j < i; j++)
+                spi.write(buf[j]);
+            cs = 1;
+        
+            nrfCmd(0x20, 0x12);         // TX on
+            ce = 1;                     // Enable Chip
+            ThisThread::sleep_for(200ms);    
+            ce = 0;                     // (in preparation of switching to RX quickly)
+        }
+        valueType = valueType == 2 ? 0 : valueType + 1;
     }
+    timer.stop();
 }
 
 /**
